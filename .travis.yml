@@ -7,10 +7,10 @@ python:
  - 3.7
 
 before_install:
- - wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb
- - sudo dpkg -i erlang-solutions_1.0_all.deb
- - sudo apt-get -qq update
- - sudo apt-get install -y esl-erlang=1:19.3.6 rabbitmq-server
+ - wget https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.7.3/rabbitmq-server_3.7.3-1_all.deb
+ - wget http://packages.erlang-solutions.com/site/esl/esl-erlang/FLAVOUR_1_general/esl-erlang_20.2.2-1~debian~jessie_amd64.deb
+ - sudo dpkg -i esl-erlang_20.2.2-1~debian~jessie_amd64.deb
+ - sudo dpkg -i rabbitmq-server_3.7.3-1_all.deb
 
 install:
  - pip install .
