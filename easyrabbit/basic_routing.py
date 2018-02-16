@@ -19,7 +19,7 @@ def _fmt_bytes(b: bytes, maxlen=32):
         return "{}({} bytes)".format(b, len(b))
 
 
-class BlockingConnector:
+class _RoutingConnector:
     def __init__(self, url: str, exchange: str, daemon=True, exchange_arguments={}):
         self._params = pika.URLParameters(url)
         self._exchange = exchange
@@ -104,8 +104,11 @@ class BlockingConnector:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+    def __del__(self):
+        self.close()
 
-class BlockingReader(BlockingConnector):
+
+class RoutingReader(_RoutingConnector):
     def __init__(self, url: str, exchange: str, queue_name: str, routing_key: str, *,
                  exclusive=False, exchange_args={}, queue_args={}, daemon=True):
         self._consumer_tag = None
@@ -170,7 +173,10 @@ class BlockingReader(BlockingConnector):
         return self
 
     def __next__(self):
-        return self.get()
+        try:
+            return self.get()
+        except BrokenPipeError:
+            raise StopIteration()
 
     def get(self):
         return self.parent_pipe.recv_bytes()
@@ -189,8 +195,11 @@ class BlockingReader(BlockingConnector):
             while self.parent_pipe.poll():
                 yield self.get()
 
+    def empty(self):
+        return not self.parent_pipe.poll()
 
-class BlockingWriter(BlockingConnector):
+
+class RoutingWriter(_RoutingConnector):
     def __init__(self, url, exchange, routing_key, *,
                  mandatory=False, immediate=False, retry=False, poll_time=0.01, exchange_args={}, daemon=True):
         self._routing_key = routing_key

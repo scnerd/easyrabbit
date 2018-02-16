@@ -1,5 +1,5 @@
 from unittest import TestCase
-from easyrabbit import BlockingReader, BlockingWriter
+from easyrabbit import RoutingReader, RoutingWriter
 
 
 class TestBasicRouting(TestCase):
@@ -11,8 +11,8 @@ class TestBasicRouting(TestCase):
 
         msgs = {b'hello', b'world'}
 
-        with BlockingReader(url, exchange, queue_name, routing_key) as reader:
-            with BlockingWriter(url, exchange, routing_key) as writer:
+        with RoutingReader(url, exchange, queue_name, routing_key) as reader:
+            with RoutingWriter(url, exchange, routing_key) as writer:
                 for msg in msgs:
                     writer.put(msg)
 
