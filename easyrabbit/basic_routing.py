@@ -7,9 +7,13 @@ import math
 import logging
 import os
 import signal
-# from datetime import datetime
+from datetime import datetime
 
 log = logging.getLogger(__name__)
+log.addHandler(logging.StreamHandler())
+log.setLevel(logging.DEBUG)
+
+WAIT_READY_TIMEOUT = None
 
 
 def _fmt_bytes(b, maxlen=32):
@@ -52,7 +56,7 @@ class _RoutingConnector:
         try:
             self._connection.ioloop.start()
         except KeyboardInterrupt:
-            log.debug("{} received interrupt and ")
+            log.debug("{} received interrupt and is exiting".format(self))
 
     def _on_open(self, connection):
         connection.channel(self._on_channel_open)
@@ -68,30 +72,37 @@ class _RoutingConnector:
         self._ready.value = True
 
     def wait_till_ready(self, timeout=None, interval=0.001):
+        timeout = timeout if timeout is not None else WAIT_READY_TIMEOUT
+        starttime = datetime.now()
         if timeout is not None and timeout > 0:
             for _ in range(int(math.ceil(timeout / interval))):
                 if self._ready.value:
                     return True
                 time.sleep(interval)
+                log.debug("Waiting on {} to be ready for {}s".format(self, (datetime.now() - starttime).total_seconds()))
         else:
             while not self._ready.value:
                 time.sleep(interval)
+                log.debug("Waiting on {} to be ready for {}s".format(self, (datetime.now() - starttime).total_seconds()))
             return True
 
         raise TimeoutError()
 
     def _interrupt(self):
-        if not self._proc.exitcode:
-            os.kill(self._proc.pid, signal.SIGINT)
+        log.debug("{} terminating via interrupt".format(self))
+        os.kill(self._proc.pid, signal.SIGINT)
 
     def start(self):
         self._proc.start()
         self.child_pipe.close()
 
     def close(self):
-        self._interrupt()
-        if not self._proc.exitcode:
+        try:
+            self._interrupt()
             self.parent_pipe.close()
+        except ProcessLookupError:
+            # The process is already toast
+            log.debug("Attempted to close {} but the child process was already gone".format(self))
         self._proc.join()
 
         # secs = (datetime.now() - self._starttime).total_seconds()

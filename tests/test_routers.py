@@ -1,5 +1,9 @@
 from unittest import TestCase
+import time
+
 from easyrabbit import RoutingReader, RoutingWriter
+from easyrabbit import basic_routing
+basic_routing.WAIT_READY_TIMEOUT = 5
 
 
 class TestBasicRouting(TestCase):
@@ -15,6 +19,7 @@ class TestBasicRouting(TestCase):
             with RoutingWriter(url, exchange, routing_key) as writer:
                 for msg in msgs:
                     writer.put(msg)
+                time.sleep(1)
 
             for msg, res in zip(msgs, reader):
                 self.assertEqual(msg, res)
