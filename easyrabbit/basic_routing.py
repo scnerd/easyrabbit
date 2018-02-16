@@ -27,7 +27,7 @@ class _RoutingConnector:
         self._pipe_in, self._pipe_out = mp.Pipe()
         self._connection = None
         self._channel = None
-        self._reader = mp.Value(ctypes.c_bool, False)
+        self._ready = mp.Value(ctypes.c_bool, False)
         # self._counter = mp.Value(ctypes.c_int, 0)
         # self._starttime = datetime.now()
 
@@ -81,7 +81,8 @@ class _RoutingConnector:
         raise TimeoutError()
 
     def _interrupt(self):
-        os.kill(self._proc.pid, signal.SIGINT)
+        if not self._proc.exitcode:
+            os.kill(self._proc.pid, signal.SIGINT)
 
     def start(self):
         self._proc.start()
@@ -89,7 +90,8 @@ class _RoutingConnector:
 
     def close(self):
         self._interrupt()
-        self.parent_pipe.close()
+        if not self._proc.exitcode:
+            self.parent_pipe.close()
         self._proc.join()
 
         # secs = (datetime.now() - self._starttime).total_seconds()
