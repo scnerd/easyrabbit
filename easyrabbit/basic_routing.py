@@ -12,7 +12,7 @@ import signal
 log = logging.getLogger(__name__)
 
 
-def _fmt_bytes(b: bytes, maxlen=32):
+def _fmt_bytes(b, maxlen=32):
     if len(b) > maxlen:
         return "{}...({} bytes)".format(b[:maxlen], len(b))
     else:
@@ -20,10 +20,10 @@ def _fmt_bytes(b: bytes, maxlen=32):
 
 
 class _RoutingConnector:
-    def __init__(self, url: str, exchange: str, daemon=True, exchange_arguments={}):
+    def __init__(self, url, exchange, daemon=True, exchange_arguments={}):
         self._params = pika.URLParameters(url)
         self._exchange = exchange
-        self._exchange_args = exchange_arguments
+        self._exchange_args = exchange_arguments or {}
         self._pipe_in, self._pipe_out = mp.Pipe()
         self._connection = None
         self._channel = None
@@ -109,13 +109,32 @@ class _RoutingConnector:
 
 
 class RoutingReader(_RoutingConnector):
-    def __init__(self, url: str, exchange: str, queue_name: str, routing_key: str, *,
-                 exclusive=False, exchange_args={}, queue_args={}, daemon=True):
+    def __init__(self, url, exchange, queue_name, routing_key, *,
+                 exclusive=False, exchange_args=None, queue_args=None, daemon=True):
+        """
+
+        :param url:
+        :type url: str
+        :param exchange:
+        :type exchange: str
+        :param queue_name:
+        :type queue_name: str
+        :param routing_key:
+        :type routing_key: str
+        :param exclusive:
+        :type exclusive: bool
+        :param daemon:
+        :type daemon: bool
+        :param exchange_args:
+        :type exchange_args: dict
+        :param queue_args:
+        :type queue_args: dict
+        """
         self._consumer_tag = None
         self._queue_name = queue_name
         self._routing_key = routing_key
         self._exclusive = exclusive
-        self._queue_args = queue_args
+        self._queue_args = queue_args or {}
         super().__init__(url, exchange, exchange_arguments=exchange_args, daemon=daemon)
 
     @property
@@ -201,7 +220,28 @@ class RoutingReader(_RoutingConnector):
 
 class RoutingWriter(_RoutingConnector):
     def __init__(self, url, exchange, routing_key, *,
-                 mandatory=False, immediate=False, retry=False, poll_time=0.01, exchange_args={}, daemon=True):
+                 mandatory=False, immediate=False, retry=False, poll_time=0.01, exchange_args=None, daemon=True):
+        """
+
+        :param url:
+        :type url: str
+        :param exchange:
+        :type exchange: str
+        :param routing_key:
+        :type routing_key: str
+        :param mandatory:
+        :type mandatory: bool
+        :param immediate:
+        :type immediate: bool
+        :param retry:
+        :type retry: bool
+        :param daemon:
+        :type daemon: bool
+        :param poll_time:
+        :type poll_time: Real
+        :param exchange_args:
+        :type exchange_args: dict
+        """
         self._routing_key = routing_key
         self._poll_timeout = poll_time
         self._mandatory = mandatory
@@ -246,9 +286,9 @@ class RoutingWriter(_RoutingConnector):
         else:
             log.warning("{} got message {} returned, dropping it".format(self, _fmt_bytes(body)))
 
-    def put(self, value: bytes):
+    def put(self, value):
         self.parent_pipe.send_bytes(value)
 
-    def putall(self, values: [bytes]):
+    def putall(self, values):
         for v in values:
             self.put(v)

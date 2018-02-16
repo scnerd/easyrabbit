@@ -4,7 +4,7 @@ from easyrabbit import RoutingReader, RoutingWriter
 
 class TestBasicRouting(TestCase):
     def test_both(self):
-        url = 'localhost'
+        url = 'amqp://localhost'
         exchange = 'TEST_EXCHANGE'
         queue_name = 'test_queue'
         routing_key = 'test_rtkey'
