@@ -280,8 +280,8 @@ class RoutingWriter(_RoutingConnector):
     def _publish(self):
         # Send new messages
         while self.child_pipe.poll():
-            msg = self.child_pipe.recv_bytes()
-            self._channel.basic_publish(self._exchange, self._routing_key, msg,
+            key, msg = self.child_pipe.recv()
+            self._channel.basic_publish(self._exchange, key, msg,
                                         mandatory=self._mandatory, immediate=self._immediate)
 
         # Send retry messages
@@ -299,8 +299,9 @@ class RoutingWriter(_RoutingConnector):
         else:
             log.warning("{} got message {} returned, dropping it".format(self, _fmt_bytes(body)))
 
-    def put(self, value):
-        self.parent_pipe.send_bytes(value)
+    def put(self, value, routing_key=None):
+        key = routing_key if routing_key is not None else self._routing_key
+        self.parent_pipe.send((key, value))
 
     def putall(self, values):
         for v in values:

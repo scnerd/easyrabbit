@@ -1,9 +1,7 @@
 easyrabbit
 ==========
 
-|Coverage Status|
-
-|Build Status|
+|Coverage Status| |Build Status|
 
 Actually easy RabbitMQ utilities for common tasks. Hides the
 complexities of complete control packages like ``pika`` by wrapping
@@ -16,7 +14,7 @@ You can install directly from git using pip::
 
     pip install git+https://github.com/scnerd/easyrabbit
 
-or from PyPi (not yet uploaded)::
+or from PyPi::
 
     pip install easyrabbit
 
