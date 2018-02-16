@@ -73,17 +73,14 @@ class _RoutingConnector:
 
     def wait_till_ready(self, timeout=None, interval=0.001):
         timeout = timeout if timeout is not None else WAIT_READY_TIMEOUT
-        starttime = datetime.now()
         if timeout is not None and timeout > 0:
             for _ in range(int(math.ceil(timeout / interval))):
                 if self._ready.value:
                     return True
                 time.sleep(interval)
-                log.debug("Waiting on {} to be ready for {}s".format(self, (datetime.now() - starttime).total_seconds()))
         else:
             while not self._ready.value:
                 time.sleep(interval)
-                log.debug("Waiting on {} to be ready for {}s".format(self, (datetime.now() - starttime).total_seconds()))
             return True
 
         raise TimeoutError()
@@ -118,7 +115,8 @@ class _RoutingConnector:
         self.close()
 
     def __del__(self):
-        self.close()
+        if self.child_pipe.is_closed:  # Then we're in the parent
+            self.close()
 
 
 class RoutingReader(_RoutingConnector):

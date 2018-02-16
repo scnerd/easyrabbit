@@ -73,7 +73,7 @@ just repeatedly calls ``get``, and hence is blocking and will only end
 when the reader is closed. Use ``reader.getall_nowait()`` to obtain all
 values currently in the queue.
 
-All result objects are byte arrays (or strings, in Python 2)
+All result objects are byte arrays.
 
 Writing
 ~~~~~~~
