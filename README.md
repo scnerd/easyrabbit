@@ -2,7 +2,7 @@
 
 [![Coverage Status](https://coveralls.io/repos/github/scnerd/easyrabbit/badge.svg?branch=master)](https://coveralls.io/github/scnerd/easyrabbit?branch=master)
 
-
+[![Build Status](https://travis-ci.org/scnerd/easyrabbit.svg?branch=master)](https://travis-ci.org/scnerd/easyrabbit)
 
 Actually easy RabbitMQ utilities for common tasks. Hides the complexities of complete control packages like `pika` by wrapping common use cases in minimalistic wrappers.
 
