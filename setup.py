@@ -8,5 +8,8 @@ setup(
     license='MIT',
     author='scnerd',
     author_email='',
-    description=''
+    description='Easy utilities for common RabbitMQ tasks',
+    install_requires=[
+        'pika>=0.10',
+    ]
 )
