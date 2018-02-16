@@ -8,9 +8,10 @@ python:
  - 3.6
  - 3.7
 
-before_install:
- - sudo apt-get -qq update
- - sudo apt-get install -y rabbitmq-server
+addons:
+  apt:
+    packages:
+      - rabbitmq-server
 
 install:
  - pip install .

@@ -1,5 +1,9 @@
 # easyrabbit
 
+[![Coverage Status](https://coveralls.io/repos/github/scnerd/easyrabbit/badge.svg?branch=master)](https://coveralls.io/github/scnerd/easyrabbit?branch=master)
+
+
+
 Actually easy RabbitMQ utilities for common tasks. Hides the complexities of complete control packages like `pika` by wrapping common use cases in minimalistic wrappers.
 
 # Installation
