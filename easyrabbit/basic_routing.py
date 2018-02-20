@@ -32,6 +32,7 @@ class _RoutingConnector:
         self._connection = None
         self._channel = None
         self._ready = mp.Value(ctypes.c_bool, False)
+        self._closed = False
         # self._counter = mp.Value(ctypes.c_int, 0)
         # self._starttime = datetime.now()
 
@@ -92,6 +93,10 @@ class _RoutingConnector:
     def start(self):
         self._proc.start()
         self.child_pipe.close()
+        if self.child_pipe is self._pipe_in:
+            self._pipe_in = None
+        else:
+            self._pipe_out = None
 
     def close(self):
         try:
@@ -101,6 +106,7 @@ class _RoutingConnector:
             # The process is already toast
             log.debug("Attempted to close {} but the child process was already gone".format(self))
         self._proc.join()
+        self._closed = True
 
         # secs = (datetime.now() - self._starttime).total_seconds()
         # count = self._counter.value
@@ -113,10 +119,6 @@ class _RoutingConnector:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
-
-    def __del__(self):
-        if self.child_pipe.is_closed:  # Then we're in the parent
-            self.close()
 
 
 class RoutingReader(_RoutingConnector):
@@ -230,7 +232,7 @@ class RoutingReader(_RoutingConnector):
 
 
 class RoutingWriter(_RoutingConnector):
-    def __init__(self, url, exchange, routing_key, *,
+    def __init__(self, url, exchange, routing_key='', *,
                  mandatory=False, immediate=False, retry=False, poll_time=0.01, exchange_args=None, daemon=True):
         """
 
@@ -299,6 +301,9 @@ class RoutingWriter(_RoutingConnector):
 
     def put(self, value, routing_key=None):
         key = routing_key if routing_key is not None else self._routing_key
+        # # Not sure if this would actually be worth a warning
+        # if not key:
+        #     log.warning("{} had no or empty routing key provided for message {}".format(self, _fmt_bytes(value)))
         self.parent_pipe.send((key, value))
 
     def putall(self, values):
