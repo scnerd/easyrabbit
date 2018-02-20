@@ -1,7 +1,14 @@
-easyrabbit
-==========
+.. EasyRabbit documentation master file, created by
+   sphinx-quickstart on Tue Feb 20 12:05:17 2018.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
 
-|Coverage Status| |Build Status|
+Welcome to EasyRabbit's documentation!
+======================================
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
 
 Actually easy RabbitMQ utilities for common tasks. Hides the
 complexities of complete control packages like ``pika`` by wrapping
@@ -37,19 +44,19 @@ use a RabbitMQ queue as if it were a Python queue.
 
 .. code:: python
 
-    with RoutingReader(url, exchange, queue_name, routing_key) as reader:
-        for msg in reader:
-            print("Received the following message: {}".format(msg))
+   with RoutingReader(url, exchange, queue_name, routing_key) as reader:
+       for msg in reader:
+           print("Received the following message: {}".format(msg))
 
 If the reader is needed persistently, you can also launch and terminate
 it yourself:
 
 .. code:: python
 
-    reader = RoutingReader(url, exchange, queue_name, routing_key)
-    reader.start()
-    # Do things with the reader
-    reader.close()
+   reader = RoutingReader(url, exchange, queue_name, routing_key)
+   reader.start()
+   # Do things with the reader
+   reader.close()
 
 Note that even though the reader is asynchronous, you don't need to wait
 for it to be ready before using it. All calls hang on the process pipe
@@ -59,12 +66,12 @@ however, you can use ``wait_till_ready``:
 
 .. code:: python
 
-    reader = RoutingReader(url, exchange, queue_name, routing_key)
-    reader.start()
-    try:
-        reader.wait_till_ready(timeout=5)
-    except TimeoutError:
-        raise RuntimeError("RabbitMQ reader took more than 5 seconds to launch")
+   reader = RoutingReader(url, exchange, queue_name, routing_key)
+   reader.start()
+   try:
+      reader.wait_till_ready(timeout=5)
+   except TimeoutError:
+      raise RuntimeError("RabbitMQ reader took more than 5 seconds to launch")
 
 While ``reader.get`` is blocking, a non-blocking equivalent is
 ``reader.get_nowait``, or your code can explicitly check that a value is
@@ -83,14 +90,16 @@ nearly identical interface for writing messages to RabbitMQ
 
 .. code:: python
 
-    with RoutingWriter(url, exchange, routing_key) as writer:
-        for msg in msgs:
-            writer.put(msg)
+   with RoutingWriter(url, exchange, routing_key) as writer:
+       for msg in msgs:
+           writer.put(msg)
 
 ``RoutingWriter`` exposes much the same API as ``RoutingReader``, except
 of course exposing ``put`` instead of ``get``.
 
-.. |Coverage Status| image:: https://coveralls.io/repos/github/scnerd/easyrabbit/badge.svg?branch=master
-   :target: https://coveralls.io/github/scnerd/easyrabbit?branch=master
-.. |Build Status| image:: https://travis-ci.org/scnerd/easyrabbit.svg?branch=master
-   :target: https://travis-ci.org/scnerd/easyrabbit
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
