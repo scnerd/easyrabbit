@@ -1,7 +1,7 @@
 easyrabbit
 ==========
 
-|Coverage Status| |Build Status|
+|Coverage Status| |Build Status| |Doc Status|
 
 Actually easy RabbitMQ utilities for common tasks. Hides the
 complexities of complete control packages like ``pika`` by wrapping
@@ -94,3 +94,6 @@ of course exposing ``put`` instead of ``get``.
    :target: https://coveralls.io/github/scnerd/easyrabbit?branch=master
 .. |Build Status| image:: https://travis-ci.org/scnerd/easyrabbit.svg?branch=master
    :target: https://travis-ci.org/scnerd/easyrabbit
+.. |Doc Status| image:: https://readthedocs.org/projects/easyrabbit/badge/?version=latest
+   :target: http://easyrabbit.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
