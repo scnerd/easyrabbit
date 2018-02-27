@@ -7,11 +7,11 @@ import math
 import logging
 import os
 import signal
-from datetime import datetime
+# from datetime import datetime
 
 log = logging.getLogger(__name__)
-log.addHandler(logging.StreamHandler())
-log.setLevel(logging.DEBUG)
+# log.addHandler(logging.StreamHandler())
+# log.setLevel(logging.DEBUG)
 
 WAIT_READY_TIMEOUT = None
 
@@ -60,9 +60,11 @@ class _RoutingConnector:
             log.debug("{} received interrupt and is exiting".format(self))
 
     def _on_open(self, connection):
+        log.debug("{} creating channel".format(self))
         connection.channel(self._on_channel_open)
 
     def _on_channel_open(self, channel):
+        log.debug("{} declaring exchange".format(self))
         self._channel = channel
         self._channel.exchange_declare(self._on_exchange_ok, self._exchange, arguments=self._exchange_args)
 
@@ -123,7 +125,7 @@ class _RoutingConnector:
 
 class RoutingReader(_RoutingConnector):
     def __init__(self, url, exchange, queue_name, routing_key, *,
-                 exclusive=False, exchange_args=None, queue_args=None, daemon=True):
+                 exclusive=False, no_ack=False, exchange_args=None, queue_args=None, daemon=True, deserializer=None):
         """
 
         :param url:
@@ -142,12 +144,16 @@ class RoutingReader(_RoutingConnector):
         :type exchange_args: dict
         :param queue_args:
         :type queue_args: dict
+        :param deserializer:
+        :type deserializer: None|callable
         """
         self._consumer_tag = None
         self._queue_name = queue_name
         self._routing_key = routing_key
         self._exclusive = exclusive
         self._queue_args = queue_args or {}
+        self._deserializer = deserializer
+        self._no_ack = no_ack
         super().__init__(url, exchange, exchange_arguments=exchange_args, daemon=daemon)
 
     @property
@@ -159,37 +165,46 @@ class RoutingReader(_RoutingConnector):
         return self._pipe_out
 
     def _on_exchange_ok(self, _):
+        log.debug("{} declaring queue".format(self))
         self._channel.queue_declare(callback=self._on_queue_ok,
                                     queue=self._queue_name,
                                     exclusive=self._exclusive,
                                     arguments=self._queue_args)
 
     def _on_queue_ok(self, _):
+        log.debug("{} binding queue".format(self))
         self._channel.queue_bind(callback=self._on_bind_ok,
                                  queue=self._queue_name,
                                  exchange=self._exchange,
                                  routing_key=self._routing_key)
 
     def _on_bind_ok(self, _):
+        log.debug("{} finishing setup".format(self))
         self._channel.add_on_cancel_callback(self._on_cancel)
         self._start_consuming()
 
     def _start_consuming(self):
-        self._consumer_tag = self._channel.basic_consume(self._on_message, self._queue_name)
+        self._consumer_tag = self._channel.basic_consume(self._on_message, self._queue_name, no_ack=self._no_ack)
 
         log.debug("{} listening on {}/{} for key {}".format(self, self._exclusive, self._queue_name, self._routing_key))
         self._mark_ready()
 
     def _on_cancel(self, _):
+        log.debug("{} received cancel".format(self))
         self._connection.close()
 
     def _on_message(self, chan, deliver, props, body):
         try:
             log.debug("{} received {} from {}/{}".format(self, _fmt_bytes(body), self._exchange, self._queue_name))
-            self.child_pipe.send_bytes(body)
-            self._channel.basic_ack(delivery_tag=deliver.delivery_tag)
+            if self._deserializer is not None:
+                self.child_pipe.send(self._deserializer(body))
+            else:
+                self.child_pipe.send_bytes(body)
+            if not self._no_ack:
+                self._channel.basic_ack(delivery_tag=deliver.delivery_tag)
         except Exception:
-            self._channel.basic_nack(delivery_tag=deliver.delivery_tag)
+            if not self._no_ack:
+                self._channel.basic_nack(delivery_tag=deliver.delivery_tag)
             raise
 
     def _stop_consuming(self):
@@ -233,7 +248,7 @@ class RoutingReader(_RoutingConnector):
 
 class RoutingWriter(_RoutingConnector):
     def __init__(self, url, exchange, routing_key='', *,
-                 mandatory=False, immediate=False, retry=False, poll_time=0.01, exchange_args=None, daemon=True):
+                 mandatory=False, immediate=False, retry=False, poll_time=0.01, exchange_args=None, daemon=True, serializer=None):
         """
 
         :param url:
@@ -254,6 +269,8 @@ class RoutingWriter(_RoutingConnector):
         :type poll_time: Real
         :param exchange_args:
         :type exchange_args: dict
+        :param serializer:
+        :type serializer: None|callable
         """
         self._routing_key = routing_key
         self._poll_timeout = poll_time
@@ -261,6 +278,7 @@ class RoutingWriter(_RoutingConnector):
         self._immediate = immediate
         self._retry = retry
         self._retry_queue = Queue() if retry else None
+        self._serializer = serializer
 
         super().__init__(url, exchange, exchange_arguments=exchange_args, daemon=daemon)
 
@@ -273,6 +291,7 @@ class RoutingWriter(_RoutingConnector):
         return self._pipe_in
 
     def _on_exchange_ok(self, _):
+        log.debug("{} finishing setup".format(self))
         self._channel.add_on_return_callback(self._on_return)
         self._mark_ready()
         self._publish()
@@ -281,6 +300,8 @@ class RoutingWriter(_RoutingConnector):
         # Send new messages
         while self.child_pipe.poll():
             key, msg = self.child_pipe.recv()
+            if self._serializer:
+                msg = self._serializer(msg)
             self._channel.basic_publish(self._exchange, key, msg,
                                         mandatory=self._mandatory, immediate=self._immediate)
 
